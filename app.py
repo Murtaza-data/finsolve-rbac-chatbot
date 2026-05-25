@@ -9,8 +9,6 @@ from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
-
 DEPARTMENT_FILES = {
     "engineering": ["data/engineering/engineering_master_doc.md"],
     "finance": ["data/finance/financial_summary.md", "data/finance/quarterly_financial_report.md"],
@@ -55,14 +53,14 @@ def load_vectorstores():
         )
     return vectorstores
 
-def get_answer(question, role, vectorstores):
+def get_answer(question, role, vectorstores, api_key):
     collections = ROLE_COLLECTIONS[role]
     all_docs = []
     for col in collections:
         retriever = vectorstores[col].as_retriever(search_kwargs={"k": 3})
         all_docs.extend(retriever.invoke(question))
     context = "\n\n".join([doc.page_content for doc in all_docs])
-    llm = ChatGroq(model="llama-3.1-8b-instant", api_key=GROQ_API_KEY)
+    llm = ChatGroq(model="llama-3.1-8b-instant", api_key=api_key)
     prompt = ChatPromptTemplate.from_template("""
 You are an internal assistant for FinSolve Technologies.
 Answer the question using only the context provided below.
@@ -85,12 +83,18 @@ st.set_page_config(page_title="FinSolve Chatbot", page_icon="🏦", layout="wide
 st.sidebar.title("🏦 FinSolve Technologies")
 st.sidebar.markdown("Internal Knowledge Assistant")
 st.sidebar.markdown("---")
+groq_api_key = st.sidebar.text_input(
+    "🔑 Enter Groq API Key",
+    type="password",
+    help="Get your free key at console.groq.com"
+)
+st.sidebar.markdown("---")
 st.sidebar.markdown("### How it works")
 st.sidebar.markdown("""
+- Enter your Groq API key above
 - Select your role to login
 - Ask questions about your department
 - Only your allowed data is searched
-- Powered by RAG + LLaMA
 """)
 st.sidebar.markdown("---")
 st.sidebar.markdown("### Tech Stack")
@@ -102,7 +106,6 @@ st.sidebar.markdown("""
 - 🎨 Streamlit
 """)
 st.sidebar.markdown("---")
-st.sidebar.markdown("Built by **Mohammad Murtaza**")
 st.sidebar.markdown("[GitHub Profile](https://github.com/Murtaza-data)")
 
 # --- Session State ---
@@ -117,7 +120,7 @@ if "messages" not in st.session_state:
 if not st.session_state.logged_in:
     st.title("🏦 FinSolve Technologies")
     st.subheader("Internal Knowledge Assistant")
-    st.markdown("### Built by Mohammad Murtaza | RAG + RBAC + LLaMA + Langchain")
+    st.markdown("### RAG + RBAC + LLaMA + Langchain")
     st.markdown("---")
 
     col1, col2, col3 = st.columns(3)
@@ -132,10 +135,13 @@ if not st.session_state.logged_in:
     st.markdown("### Select Your Role to Login")
     role = st.selectbox("", list(ROLE_COLLECTIONS.keys()))
     if st.button("🔐 Login", type="primary", use_container_width=True):
-        st.session_state.logged_in = True
-        st.session_state.role = role
-        st.session_state.messages = []
-        st.rerun()
+        if not groq_api_key:
+            st.warning("⚠️ Please enter your Groq API key in the sidebar first.")
+        else:
+            st.session_state.logged_in = True
+            st.session_state.role = role
+            st.session_state.messages = []
+            st.rerun()
 
 # --- Chat Screen ---
 else:
@@ -165,13 +171,12 @@ else:
             st.write(prompt)
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                answer = get_answer(prompt, st.session_state.role, vectorstores)
+                answer = get_answer(prompt, st.session_state.role, vectorstores, groq_api_key)
             st.write(answer)
             st.session_state.messages.append({"role": "assistant", "content": answer})
 
     st.markdown("---")
     st.markdown(
-        "Built by **Mohammad Murtaza** | "
-        "[GitHub](https://github.com/Murtaza-data) | "
-        "Powered by RAG + RBAC + LLaMA + Langchain"
+        "Powered by RAG + RBAC + LLaMA + Langchain | "
+        "[GitHub](https://github.com/Murtaza-data)"
     )
