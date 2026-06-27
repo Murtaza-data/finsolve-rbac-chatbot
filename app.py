@@ -60,7 +60,7 @@ def get_answer(question, role, vectorstores, api_key):
         retriever = vectorstores[col].as_retriever(search_kwargs={"k": 3})
         all_docs.extend(retriever.invoke(question))
     context = "\n\n".join([doc.page_content for doc in all_docs])
-    llm = ChatGroq(model="llama-3.1-8b-instant", api_key=api_key)
+    llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=api_key)
     prompt = ChatPromptTemplate.from_template("""
 You are an internal assistant for FinSolve Technologies.
 Answer the question using only the context provided below.
