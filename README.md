@@ -38,12 +38,14 @@ flowchart TD
 
 ![Login with role](screenshots/login.png)
 
+<br>
+
 **Role-restricted answer**
 
 ![Role-restricted answer](screenshots/answer.png)
 
 ## 🛠️ Tech Stack
-- **LLM:** Groq + LLaMA 3.1
+- **LLM:** Groq + GPT-OSS 120B
 - **Framework:** Langchain
 - **Vector DB:** ChromaDB
 - **Embeddings:** HuggingFace
